@@ -41,7 +41,7 @@ KvServer::~KvServer() {
 slash::Status KvServer::Start() {
   // TEST
   std::set<std::string> nodes;
-  floyd_->GetAllNodes(nodes);
+  floyd_->GetAllServers(&nodes);
   for (auto& it : nodes) {
     LOG_DEBUG ("nodes: %s", it.c_str());
   }
@@ -84,42 +84,42 @@ int KvServerConn::DealMessage() {
   set_is_reply(true);
 
   switch (command_.type()) {
-    case client::Type::WRITE: {
+    case Type::WRITE: {
       LOG_DEBUG("ServerConn::DealMessage Write");
-      client::Request_Write request = command_.write();
+      Request_Write request = command_.write();
 
-      command_res_.set_type(client::Type::WRITE);
+      command_res_.set_type(Type::WRITE);
 
       Status result = floyd_->Write(request.key(), request.value());
       if (!result.ok()) {
-        command_res_.set_code(client::StatusCode::kError);
+        command_res_.set_code(StatusCode::kError);
         command_res_.set_msg(result.ToString());
         LOG_ERROR("write failed %s", result.ToString().c_str());
       } else {
-        command_res_.set_code(client::StatusCode::kOk);
+        command_res_.set_code(StatusCode::kOk);
         LOG_DEBUG ("write key(%s) ok!", request.key().c_str());
       }
       break;
     }
 
-    case client::Type::READ: {
+    case Type::READ: {
       LOG_DEBUG("ServerConn::DealMessage READ");
-      client::Request_Read request = command_.read();
+      Request_Read request = command_.read();
 
-      command_res_.set_type(client::Type::READ);
-      client::Response_Read* response = command_res_.mutable_read();
+      command_res_.set_type(Type::READ);
+      Response_Read* response = command_res_.mutable_read();
 
       std::string value;
-      Status result = floyd_->Read(request.key(), value);
+      Status result = floyd_->Read(request.key(), &value);
       if (result.ok()) {
-        command_res_.set_code(client::StatusCode::kOk);
+        command_res_.set_code(StatusCode::kOk);
         response->set_value(value);
         LOG_DEBUG ("read key(%s) ok!", request.key().c_str());
       } else if (result.IsNotFound()) {
-        command_res_.set_code(client::StatusCode::kNotFound);
+        command_res_.set_code(StatusCode::kNotFound);
         LOG_ERROR("read key(%s) not found %s", request.key().c_str(), result.ToString().c_str());
       } else {
-        command_res_.set_code(client::StatusCode::kError);
+        command_res_.set_code(StatusCode::kError);
         LOG_ERROR("read key(%s) failed %s", request.key().c_str(), result.ToString().c_str());
       }
 #ifndef NDEBUG
@@ -130,36 +130,36 @@ int KvServerConn::DealMessage() {
       break;
     }
 
-    case client::Type::STATUS: {
+    case Type::STATUS: {
       LOG_DEBUG("ServerConn::DealMessage ServerStaus");
-      command_res_.set_type(client::Type::STATUS);
-      client::Response_ServerStatus* response = command_res_.mutable_server_status();
+      command_res_.set_type(Type::STATUS);
+      Response_ServerStatus* response = command_res_.mutable_server_status();
 
       std::string value;
-      bool ret = floyd_->GetServerStatus(value);
+      bool ret = floyd_->GetServerStatus(&value);
       if (!ret) {
-        command_res_.set_code(client::StatusCode::kError);
+        command_res_.set_code(StatusCode::kError);
         response->set_msg("failed to dump status");
         LOG_ERROR("Status failed");
       } else {
-        command_res_.set_code(client::StatusCode::kOk);
+        command_res_.set_code(StatusCode::kOk);
         response->set_msg(value);
         LOG_DEBUG ("Status ok!\n%s", value.c_str());
       }
       break;
     }
-    case client::Type::DIRTYWRITE: {
+    /*case Type::DIRTYWRITE: {
       LOG_DEBUG("ServerConn::DealMessage DirtyWrite");
-      client::Request_Write request = command_.write();
+      Request_Write request = command_.write();
 
-      command_res_.set_type(client::Type::DIRTYWRITE);
+      command_res_.set_type(Type::DIRTYWRITE);
       Status result = floyd_->DirtyWrite(request.key(), request.value());
       if (!result.ok()) {
-        command_res_.set_code(client::StatusCode::kError);
+        command_res_.set_code(StatusCode::kError);
         command_res_.set_msg(result.ToString());
         LOG_ERROR("DirtyWrite failed %s", result.ToString().c_str());
       } else {
-        command_res_.set_code(client::StatusCode::kOk);
+        command_res_.set_code(StatusCode::kOk);
         LOG_DEBUG ("DirtyWrite key(%s) ok!", request.key().c_str());
       }
 
@@ -167,25 +167,25 @@ int KvServerConn::DealMessage() {
       google::protobuf::TextFormat::PrintToString(command_res_, &text_format);
       LOG_DEBUG("DirtyWrite res message :\n%s", text_format.c_str());
       break;
-    }
-    case client::Type::DIRTYREAD: {
+    }*/
+    case Type::DIRTYREAD: {
       LOG_DEBUG("ServerConn::DealMessage DIRTYREAD");
-      client::Request_Read request = command_.read();
+      Request_Read request = command_.read();
 
-      command_res_.set_type(client::Type::DIRTYREAD);
-      client::Response_Read* response = command_res_.mutable_read();
+      command_res_.set_type(Type::DIRTYREAD);
+      Response_Read* response = command_res_.mutable_read();
 
       std::string value;
-      Status result = floyd_->DirtyRead(request.key(), value);
+      Status result = floyd_->DirtyRead(request.key(), &value);
       if (result.ok()) {
-        command_res_.set_code(client::StatusCode::kOk);
+        command_res_.set_code(StatusCode::kOk);
         response->set_value(value);
         LOG_DEBUG ("DirtyRead key(%s) ok!", request.key().c_str());
       } else if (result.IsNotFound()) {
-        command_res_.set_code(client::StatusCode::kNotFound);
+        command_res_.set_code(StatusCode::kNotFound);
         LOG_ERROR("DirtyRead key(%s) not found %s", request.key().c_str(), result.ToString().c_str());
       } else {
-        command_res_.set_code(client::StatusCode::kError);
+        command_res_.set_code(StatusCode::kError);
         LOG_ERROR("DirtyRead key(%s) failed %s", request.key().c_str(), result.ToString().c_str());
       }
 
@@ -194,18 +194,18 @@ int KvServerConn::DealMessage() {
       LOG_DEBUG("DirtyRead res message :\n%s", text_format.c_str());
       break;
     }
-    case client::Type::DELETE: {
+    case Type::DELETE: {
       LOG_DEBUG("ServerConn::DealMessage Delete");
-      client::Request_Delete request = command_.del();
+      Request_Delete request = command_.del();
 
-      command_res_.set_type(client::Type::DELETE);
+      command_res_.set_type(Type::DELETE);
       Status result = floyd_->Delete(request.key());
       if (!result.ok()) {
-        command_res_.set_code(client::StatusCode::kError);
+        command_res_.set_code(StatusCode::kError);
         command_res_.set_msg(result.ToString());
         LOG_ERROR("Delete failed %s", result.ToString().c_str());
       } else {
-        command_res_.set_code(client::StatusCode::kOk);
+        command_res_.set_code(StatusCode::kOk);
         LOG_DEBUG ("Delete key(%s) ok!", request.key().c_str());
       }
 
@@ -214,12 +214,12 @@ int KvServerConn::DealMessage() {
       LOG_DEBUG("Delete res message :\n%s", text_format.c_str());
       break;
     }
-    case client::Type::LOGLEVEL: {
+    case Type::LOGLEVEL: {
       int log_level = command_.log_level();
       LOG_DEBUG("ServerConn::DealMessage LogLevel %d", log_level);
-      command_res_.set_type(client::Type::LOGLEVEL);
+      command_res_.set_type(Type::LOGLEVEL);
       floyd_->set_log_level(log_level);
-      command_res_.set_code(client::StatusCode::kOk);
+      command_res_.set_code(StatusCode::kOk);
       break;
     }
     default:

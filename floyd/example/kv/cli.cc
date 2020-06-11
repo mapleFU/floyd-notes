@@ -55,8 +55,8 @@ int main(int argc, char* argv[]) {
         break;
     }
   }
-  floyd::client::Option option(server_str);
-  floyd::client::Cluster cluster(option);
+  floyd::Option option(server_str);
+  floyd::Cluster cluster(option);
 
   printf ("Will connect(%s) with cmd(%s), begin=%d cnt=%d\n", server_str.c_str(), cmd.c_str(), begin, cnt);
   sleep(1);
@@ -131,7 +131,7 @@ int main(int argc, char* argv[]) {
     }
 
     if (cmd == "debug_on") {
-      result = cluster.set_log_level(floyd::client::DEBUG_LEVEL);
+      result = cluster.set_log_level(floyd::DEBUG_LEVEL);
       if (result.ok()) {
         fprintf (stderr, "set log_level to debug ok\n");
       } else {
@@ -139,7 +139,7 @@ int main(int argc, char* argv[]) {
       }
     }
     if (cmd == "debug_off") {
-      result = cluster.set_log_level(floyd::client::INFO_LEVEL);
+      result = cluster.set_log_level(floyd::INFO_LEVEL);
       if (result.ok()) {
         fprintf (stderr, "set log_level to info ok\n");
       } else {

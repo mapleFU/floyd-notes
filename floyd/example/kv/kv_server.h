@@ -45,8 +45,8 @@ class KvServerConn : public pink::PbConn {
  private:
   Floyd* floyd_;
   KvServer* server_;
-  client::Request command_;
-  client::Response command_res_;
+  Request command_;
+  Response command_res_;
 };
 
 class KvServerConnFactory : public pink::ConnFactory {

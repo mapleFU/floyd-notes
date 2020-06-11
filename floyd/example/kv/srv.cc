@@ -5,9 +5,11 @@
 #include <sstream>
 #include <signal.h>
 
-#include "floyd/include/floyd_server.h"
+#include "floyd/include/floyd.h"
 
 #include "slash/include/slash_status.h"
+
+#include "kv_server.h"
 
 void Usage();
 const struct option long_options[] = {
@@ -21,11 +23,11 @@ const struct option long_options[] = {
 
 const char* short_options = "s:i:p:d:l:";
 
-floyd::FloydServer *fs;
+floyd::KvServer *fks;
 
 void IntSigHandle(int sig) {
   printf ("Catch Signal %d, cleanup...\n", sig);
-  fs->server_mutex.Unlock();
+  fks->server_mutex.Unlock();
 }
 
 void SignalSetup() {
@@ -77,15 +79,15 @@ int main(int argc, char** argv) {
 
   SignalSetup();
 
-  fs = new floyd::FloydServer(server_port, options);
-  slash::Status s = fs->Start();
+  fks = new floyd::KvServer(server_port, options);
+  slash::Status s = fks->Start();
   if (!s.ok()) {
     printf("Start Floyd Server error\n");
     return -1;
   }
 
   printf ("Will Stop FloydServer...\n");
-  delete fs;
+  delete fks;
 
   sleep(1);
   return 0;
