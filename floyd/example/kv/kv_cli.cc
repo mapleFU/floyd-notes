@@ -208,44 +208,6 @@ slash::Status Cluster::GetStatus(std::string* msg) {
   return Status::OK();
 }
 
-slash::Status Cluster::DirtyWrite(const std::string& key, const std::string& value) {
-  Request request;
-  request.set_type(Type::DIRTYWRITE);
-
-  Request_Write* write_req = request.mutable_write();
-  write_req->set_key(key);
-  write_req->set_value(value);
-
-  if (!pb_cli_->Available()) {
-    if (!Init()) {
-      return Status::IOError("init failed");
-    }
-  }
-  Status result = pb_cli_->Send(&request);
-  if (!result.ok()) {
-    LOG_ERROR("Send error: %s", result.ToString().c_str());
-    return Status::IOError("Send failed, " + result.ToString());
-  }
-
-  Response response;
-  result = pb_cli_->Recv(&response);
-  if (!result.ok()) {
-    LOG_ERROR("Recv error: %s", result.ToString().c_str());
-    return Status::IOError("Recv failed, " + result.ToString());
-  }
-
-//  std::string text_format;
-//  google::protobuf::TextFormat::PrintToString(response, &text_format);
-//  LOG_DEBUG("DirtyWrite Recv message :\n%s", text_format.c_str());
-
-//  LOG_INFO("DirtyWrite OK, status is %d, msg is %s\n", response.write().status(), response.write().msg().c_str());
-  if (response.code() == StatusCode::kOk) {
-    return Status::OK();
-  } else {
-    return Status::IOError("DirtyWrite failed with status " + response.msg());
-  }
-}
-
 slash::Status Cluster::Delete(const std::string& key) {
   Request request;
   request.set_type(Type::DELETE);

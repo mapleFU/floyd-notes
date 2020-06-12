@@ -24,7 +24,7 @@ int main(int argc, char* argv[]) {
   if (argc < 2) {
     fprintf (stderr, "Usage:\n"
             "  ./client --server ip:port\n"
-            "           --cmd [read | write | delete | status | debug_on | debug_off]\n"
+            "           --cmd [read | write | delete | dirtyread | status | debug_on | debug_off]\n"
             "           --begin id0 --end id1\n");
     exit(-1);
   }
@@ -74,16 +74,6 @@ int main(int argc, char* argv[]) {
         fprintf (stderr, "Write key(%s) ok\n", key.c_str());
       } else {
         fprintf (stderr, "Write key(%s) failed, %s\n", key.c_str(), result.ToString().c_str());
-      }
-    }
-
-    if (cmd.empty() || cmd == "dirtywrite") {
-      //fprintf (stderr, "\n=====Test DirtyWrite==========\n");
-      result = cluster.DirtyWrite(key, value);
-      if (result.ok()) {
-        fprintf (stderr, "DirtyWrite key(%s) ok\n", key.c_str());
-      } else {
-        fprintf (stderr, "DirtyWrite key(%s) failed, %s\n", key.c_str(), result.ToString().c_str());
       }
     }
 

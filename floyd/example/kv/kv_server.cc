@@ -148,26 +148,7 @@ int KvServerConn::DealMessage() {
       }
       break;
     }
-    /*case Type::DIRTYWRITE: {
-      LOG_DEBUG("ServerConn::DealMessage DirtyWrite");
-      Request_Write request = command_.write();
 
-      command_res_.set_type(Type::DIRTYWRITE);
-      Status result = floyd_->DirtyWrite(request.key(), request.value());
-      if (!result.ok()) {
-        command_res_.set_code(StatusCode::kError);
-        command_res_.set_msg(result.ToString());
-        LOG_ERROR("DirtyWrite failed %s", result.ToString().c_str());
-      } else {
-        command_res_.set_code(StatusCode::kOk);
-        LOG_DEBUG ("DirtyWrite key(%s) ok!", request.key().c_str());
-      }
-
-      std::string text_format;
-      google::protobuf::TextFormat::PrintToString(command_res_, &text_format);
-      LOG_DEBUG("DirtyWrite res message :\n%s", text_format.c_str());
-      break;
-    }*/
     case Type::DIRTYREAD: {
       LOG_DEBUG("ServerConn::DealMessage DIRTYREAD");
       Request_Read request = command_.read();
@@ -194,6 +175,7 @@ int KvServerConn::DealMessage() {
       LOG_DEBUG("DirtyRead res message :\n%s", text_format.c_str());
       break;
     }
+
     case Type::DELETE: {
       LOG_DEBUG("ServerConn::DealMessage Delete");
       Request_Delete request = command_.del();
@@ -214,6 +196,7 @@ int KvServerConn::DealMessage() {
       LOG_DEBUG("Delete res message :\n%s", text_format.c_str());
       break;
     }
+
     case Type::LOGLEVEL: {
       int log_level = command_.log_level();
       LOG_DEBUG("ServerConn::DealMessage LogLevel %d", log_level);
@@ -222,6 +205,7 @@ int KvServerConn::DealMessage() {
       command_res_.set_code(StatusCode::kOk);
       break;
     }
+
     default:
       LOG_DEBUG ("invalid msg_code %d\n", command_.type());
       break;
