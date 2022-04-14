@@ -2,6 +2,9 @@
 // This source code is licensed under the BSD-style license found in the
 // LICENSE file in the root directory of this source tree. An additional grant
 // of patent rights can be found in the PATENTS file in the same directory.
+//
+// 主要向Peer Floyd发送RequestVote，AppendEntries消息并且处理相应的response。
+// 
 
 #ifndef FLOYD_SRC_FLOYD_PEER_THREAD_H_
 #define FLOYD_SRC_FLOYD_PEER_THREAD_H_
@@ -79,9 +82,17 @@ class Peer {
   void UpdatePeerInfo();
 
   std::string peer_addr_;
+  // peer 有一个自己的地址, 也有一个全局的 Peer 列表.
   PeersSet* const peers_;
+
+  /*
+   * Peer 线程和 Primary 线程互相通知, 依靠 context_ 来封装一些
+   * 共有内存状态和并发.
+   */
+
   FloydContext* const context_;
   FloydPrimary* const primary_;
+
   RaftMeta* const raft_meta_;
   RaftLog* const raft_log_;
   ClientPool* const pool_;
@@ -89,6 +100,7 @@ class Peer {
   Options options_;
   Logger* const info_log_;
 
+  //! Leader 要有 Peer 的 next_index_ 和 match_index_.
 
   std::atomic<uint64_t> next_index_;
   std::atomic<uint64_t> match_index_;

@@ -43,6 +43,8 @@ Peer::Peer(std::string server, PeersSet* peers, FloydContext* context, FloydPrim
     match_index_(0),
     peer_last_op_time(0),
     bg_thread_(1024 * 1024 * 256) {
+
+      // 初始化为最高值.
       next_index_ = raft_log_->GetLastLogIndex() + 1;
       match_index_ = raft_meta_->GetLastApplied();
 }
@@ -62,6 +64,7 @@ int Peer::Stop() {
   return bg_thread_.StopThread();
 }
 
+//! 如果非本 term, 则无效, 否则 increment vote_quorum, 然后返回本 term 是否达到 1/2.
 bool Peer::CheckAndVote(uint64_t vote_term) {
   if (context_->current_term != vote_term) {
     return false;
@@ -69,6 +72,9 @@ bool Peer::CheckAndVote(uint64_t vote_term) {
   return (++context_->vote_quorum) > (options_.members.size() / 2);
 }
 
+//! 成为了 Leader, 可以更新 Peer 的信息了.
+//! Q: 这个地方不会有并发吗...
+//! A: 你本机理论上只有 Leader 线程会改，相对论保证你没有并发.
 void Peer::UpdatePeerInfo() {
   for (auto& pt : (*peers_)) {
     pt.second->set_next_index(raft_log_->GetLastLogIndex() + 1);
@@ -125,6 +131,7 @@ void Peer::RequestVoteRPC() {
          options_.local_ip.c_str(), options_.local_port, peer_addr_.c_str(), result.ToString().c_str());
     return;
   }
+
   if (res.request_vote_res().term() > context_->current_term) {
     // RequestVote fail, maybe opposite has larger term, or opposite has
     // longer log. if opposite has larger term, this node will become follower
@@ -134,6 +141,7 @@ void Peer::RequestVoteRPC() {
         peer_addr_.c_str(), res.request_vote_res().term(), context_->current_term);
     context_->BecomeFollower(res.request_vote_res().term());
     raft_meta_->SetCurrentTerm(context_->current_term);
+    // 实际上相当于清空 ip/port.
     raft_meta_->SetVotedForIp(context_->voted_for_ip);
     raft_meta_->SetVotedForPort(context_->voted_for_port);
     return;
@@ -144,7 +152,9 @@ void Peer::RequestVoteRPC() {
       LOGV(INFO_LEVEL, info_log_, "Peer::RequestVoteRPC: Candidate %s:%d get vote from node %s at term %d",
           options_.local_ip.c_str(), options_.local_port, peer_addr_.c_str(), context_->current_term);
       // However, we need check whether this vote is vote for old term
-      // we need ignore these type of vote
+      // we need ignore these type of vote.
+      //
+      // aba 问题检测.
       if (CheckAndVote(res.request_vote_res().term())) {
         context_->BecomeLeader();
         UpdatePeerInfo();

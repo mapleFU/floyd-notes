@@ -29,6 +29,7 @@ FloydWorkerConn::FloydWorkerConn(int fd, const std::string& ip_port,
 
 FloydWorkerConn::~FloydWorkerConn() {}
 
+//! 用户的请求 Dispatch 给 FloydImpl::DoCommand
 int FloydWorkerConn::DealMessage() {
   if (!request_.ParseFromArray(rbuf_ + 4, header_len_)) {
     std::string text_format;
@@ -110,6 +111,7 @@ FloydWorkerHandle::FloydWorkerHandle(FloydImpl* f)
   }
 
 // Only connection from other members should be accepted
+// 兄弟, 你这写的和 comment 不一样啊.
 bool FloydWorkerHandle::AccessHandle(std::string& ip_port) const {
   return true;
 }

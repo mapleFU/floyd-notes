@@ -20,6 +20,9 @@ namespace floyd {
 class Logger;
 class Entry;
 
+/*
+ * 持久化的 RaftLog, 以 key/value 的形式存储在 RocksDB 中.
+ */
 class RaftLog {
  public:
   RaftLog(rocksdb::DB* db, Logger* info_log);
@@ -40,6 +43,8 @@ class RaftLog {
    * mutex for last_log_index_
    */
   slash::Mutex lli_mutex_;
+
+  // GUARD_BY lli_mutex_.
   uint64_t last_log_index_;
 
   /*

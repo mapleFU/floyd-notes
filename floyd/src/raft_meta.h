@@ -31,8 +31,17 @@ class Logger;
  * static const std::string kvoteforport = "voteforport";
  * static const std::string kcommitindex = "commitindex";
  * static const std::string klastapplied = "applyindex";
+ *
+ * 上面是论文中 Raft 相关的部分. 包括 Term, VoteFor, commitIndex, applyIndex.
+ * 后两者在 Raft Paper 中不要求持久化, 不过工程上持久化一下也没啥毛病.
+ *
+ * 任何一个 Get/Set 接口, RaftMeta 本身都不会走缓存(可能有 RocksDB 的 Cache), 直接进 RocksDB.
+ *
  * fencing token is not part of raft, fencing token is used for implementing distributed lock
  * static const std::string kFencingToken = "FENCINGTOKEN";
+ *
+ * TODO(mwish): 这里好像用 fencing token 来实现分布式锁. 
+ *
  */
 class RaftMeta {
  public:

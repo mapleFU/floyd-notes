@@ -35,6 +35,7 @@ FloydApply::FloydApply(FloydContext* context, rocksdb::DB* db, RaftMeta* raft_me
 FloydApply::~FloydApply() {
 }
 
+// 调度 Floyd 的 Apply 线程.
 int FloydApply::Start() {
   bg_thread_.set_thread_name("A:" + std::to_string(impl_->GetLocalPort()));
   bg_thread_.Schedule(ApplyStateMachineWrapper, this);
@@ -55,13 +56,16 @@ void FloydApply::ScheduleApply() {
   bg_thread_.Schedule(&ApplyStateMachineWrapper, this);
 }
 
+//! 对 FloydApply 对象调度 Apply.
 void FloydApply::ApplyStateMachineWrapper(void* arg) {
   reinterpret_cast<FloydApply*>(arg)->ApplyStateMachine();
 }
 
+//! NOTE(mwish): 感觉上这是一个单线程调度?
 void FloydApply::ApplyStateMachine() {
   uint64_t last_applied = context_->last_applied;
   // Apply as more entry as possible
+  // 推进 applied.
   uint64_t commit_index;
   commit_index = context_->commit_index;
 

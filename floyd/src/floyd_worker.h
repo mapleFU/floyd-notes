@@ -2,6 +2,9 @@
 // This source code is licensed under the BSD-style license found in the
 // LICENSE file in the root directory of this source tree. An additional grant
 // of patent rights can be found in the PATENTS file in the same directory.
+//
+// 主要负责网络链接的建立，相应调用Floyd类的处理方法。
+//
 
 #ifndef FLOYD_SRC_FLOYD_WORKER_H_
 #define FLOYD_SRC_FLOYD_WORKER_H_

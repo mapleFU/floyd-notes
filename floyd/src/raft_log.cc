@@ -38,6 +38,8 @@ RaftLog::RaftLog(rocksdb::DB *db, Logger *info_log) :
   last_log_index_(0) {
   rocksdb::Iterator *it = db_->NewIterator(rocksdb::ReadOptions());
   it->SeekToLast();
+  // skip currentterm, voteforip, voteforport, commitindex, applyindex
+  // Note(mwish): 这什么 jb
   if (it->Valid()) {
     it->Prev();
     it->Prev();
@@ -56,6 +58,8 @@ RaftLog::~RaftLog() {
 
 uint64_t RaftLog::Append(const std::vector<const Entry *> &entries) {
   slash::MutexLock l(&lli_mutex_);
+
+  // 打包到一个 WriteBatch 中.
   rocksdb::WriteBatch wb;
   LOGV(DEBUG_LEVEL, info_log_, "RaftLog::Append: entries.size %lld", entries.size());
   // try to commit entries in one batch
@@ -67,6 +71,7 @@ uint64_t RaftLog::Append(const std::vector<const Entry *> &entries) {
   }
   rocksdb::Status s;
   s = db_->Write(rocksdb::WriteOptions(), &wb);
+  // advance `last_log_index_`
   if (!s.ok()) {
     last_log_index_ -= entries.size();
     LOGV(ERROR_LEVEL, info_log_, "RaftLog::Append append entries failed, entries size %u, last_log_index_ is %lu",

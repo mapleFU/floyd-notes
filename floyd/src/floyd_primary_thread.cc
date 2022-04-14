@@ -67,6 +67,7 @@ void FloydPrimary::AddTask(TaskType type, bool is_delay) {
       break;
     case kCheckLeader:
       if (is_delay) {
+        // electionTimeout.
         uint64_t timeout = options_.check_leader_us;
         bg_thread_.DelaySchedule(timeout / 1000LL, LaunchCheckLeaderWrapper, this);
       } else {
@@ -98,6 +99,8 @@ void FloydPrimary::LaunchCheckLeaderWrapper(void *arg) {
   reinterpret_cast<FloydPrimary *>(arg)->LaunchCheckLeader();
 }
 
+//! 如果没有 Leader, 把自身变成 Candidate, 然后通知 Peer 线程.
+//! 再触发一个 CheckLeader, 相当于 ElectionTimeout.
 void FloydPrimary::LaunchCheckLeader() {
   slash::MutexLock l(&context_->global_mu);
   if (context_->role == Role::kFollower || context_->role == Role::kCandidate) {

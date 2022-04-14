@@ -20,6 +20,8 @@ class RaftLog;
 class Logger;
 class FloydImpl;
 
+//! Log + FSM 层, 表示 Raft 的 Log Apply. 
+//! 这个地方负责读 context->commit_index, 然后把 context->apply_index 推进, 而是放一起表示.
 class FloydApply {
  public:
   FloydApply(FloydContext* context, rocksdb::DB* db, RaftMeta* raft_meta,

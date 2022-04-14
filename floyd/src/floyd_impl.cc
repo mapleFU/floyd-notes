@@ -247,6 +247,7 @@ void FloydImpl::RemoveOutPeer(const std::string& server) {
   }
 }
 
+//! 初始化每个 Peer, 然后启动它们的后台线程.
 int FloydImpl::InitPeers() {
   // Create peer threads
   // peers_.clear();

@@ -30,6 +30,8 @@ enum Role {
 class RaftMeta;
 /*
  * we use FloydContext to avoid passing the floyd_impl's this point to other thread
+ *
+ * floyd 中一些共享的配置和状态
  */
 struct FloydContext {
   // Role related
@@ -46,6 +48,7 @@ struct FloydContext {
       apply_cond(&apply_mu) {}
 
   void RecoverInit(RaftMeta *raft);
+  //! 如果 BecomeFollower 只带一个 new_term, 那相当于清空 Leader/Port.
   void BecomeFollower(uint64_t new_iterm,
       const std::string leader_ip = "", int port = 0);
   void BecomeCandidate();
@@ -71,7 +74,7 @@ struct FloydContext {
   // mutex protect commit_index
   // used in floyd_apply thread and floyd_peer thread
   slash::Mutex global_mu;
-  slash::Mutex apply_mu;
+  slash::Mutex apply_mu; // 保护 RaftMeta 有关的
   slash::CondVar apply_cond;
 };
 
