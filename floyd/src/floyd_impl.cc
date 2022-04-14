@@ -712,6 +712,7 @@ void FloydImpl::GrantVote(uint64_t term, const std::string ip, int port) {
   context_->current_term = term;
 }
 
+//! 响应投票 RPC.
 int FloydImpl::ReplyRequestVote(const CmdRequest& request, CmdResponse* response) {
   slash::MutexLock l(&context_->global_mu);
   bool granted = false;
@@ -720,9 +721,11 @@ int FloydImpl::ReplyRequestVote(const CmdRequest& request, CmdResponse* response
        context_->current_term, request_vote.term());
   /*
    * If RPC request or response contains term T > currentTerm: set currentTerm = T, convert to follower (5.1)
+   *
+   * 变成 follower, 然后设置 VoteFor.
    */
   if (request_vote.term() > context_->current_term) {
-    context_->BecomeFollower(request_vote.term());
+    context_->BecomeFollower(request_vote.term()); // 推高自己的 term.
     raft_meta_->SetCurrentTerm(context_->current_term);
   }
   // if caller's term smaller than my term, then I will notice him
@@ -733,6 +736,9 @@ int FloydImpl::ReplyRequestVote(const CmdRequest& request, CmdResponse* response
     BuildRequestVoteResponse(context_->current_term, granted, response);
     return -1;
   }
+
+  // 论文: 安全性, 不能给 Log 比自己旧的投票.
+
   uint64_t my_last_log_term = 0;
   uint64_t my_last_log_index = 0;
   raft_log_->GetLastLogTermAndIndex(&my_last_log_term, &my_last_log_index);
@@ -749,6 +755,7 @@ int FloydImpl::ReplyRequestVote(const CmdRequest& request, CmdResponse* response
     return -1;
   }
 
+  // vote_for 不能给这个 term 已经投过票的做操作.
   if (vote_for_.find(request_vote.term()) != vote_for_.end()
       && vote_for_[request_vote.term()] != std::make_pair(request_vote.ip(), request_vote.port())) {
     LOGV(INFO_LEVEL, info_log_, "FloydImpl::ReplyRequestVote: I %s:%d have voted for %s:%d in this term %lu",
@@ -757,12 +764,14 @@ int FloydImpl::ReplyRequestVote(const CmdRequest& request, CmdResponse* response
     BuildRequestVoteResponse(context_->current_term, granted, response);
     return -1;
   }
+  // 给予选票.
   vote_for_[request_vote.term()] = std::make_pair(request_vote.ip(), request_vote.port());
   LOGV(INFO_LEVEL, info_log_, "FloydImpl::ReplyRequestVote: Receive Request Vote from %s:%d, "
       "Become Follower with current_term_(%lu) and new_term(%lu)"
       " commit_index(%lu) last_applied(%lu)", request_vote.ip().c_str(), request_vote.port(),
       context_->current_term, request_vote.last_log_term(), my_last_log_index, context_->last_applied.load());
   context_->BecomeFollower(request_vote.term());
+  // Note(mwish): -> 难道这个地方不应该做一个 Batch Op 的吗, orz...
   raft_meta_->SetCurrentTerm(context_->current_term);
   raft_meta_->SetVotedForIp(context_->voted_for_ip);
   raft_meta_->SetVotedForPort(context_->voted_for_port);
